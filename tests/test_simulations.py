@@ -9,7 +9,7 @@ class TestSimulation(APITestCase):
 
         url = reverse(view_name)
 
-        self.assertEqual(url, '/simulations/simulations/move/')
+        self.assertEqual(url, '/simulations/simulation/move/')
 
         response = self.client.get(url)
 
