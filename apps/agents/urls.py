@@ -17,11 +17,10 @@ Including another URLconf
 
 
 from rest_framework import routers
+
 from apps.agents.views import AgentViewSet
 
 router = routers.DefaultRouter()
-router.register(r'agents', AgentViewSet, basename='agent')
+router.register(r"agents", AgentViewSet, basename="agent")
 
 urlpatterns = router.urls
-
-

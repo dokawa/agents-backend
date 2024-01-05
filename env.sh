@@ -1,1 +1,1 @@
-export DJANGO_SETTINGS_MODULE=apps.settings
+export DJANGO_SETTINGS_MODULE=settings.settings

@@ -1,7 +1,6 @@
 /.cache/
 /.coverage
 /media/
-/static/
 __pycache__/
 .idea
 .vscode

@@ -1,0 +1,11 @@
+# Random setup
+import random
+
+SEED = 1337
+random.seed(SEED)
+
+COLLISION_BLOCK_ID = 32125
+
+VISION_RADIUS = 8
+ATTENTION_BANDWIDTH = 8
+RETENTION = 8
