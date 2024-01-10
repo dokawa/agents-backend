@@ -8,6 +8,7 @@ def convert_to_sprite_name(name):
 
 def load_agent_data(apps, schema_editor):
     Agent = apps.get_model("agents", "Agent")
+    Simulation = apps.get_model("simulations", "Simulation")
 
     agent_data = [
         "Abigail Chen",
@@ -36,10 +37,25 @@ def load_agent_data(apps, schema_editor):
         "Wolfgang Schulz",
         "Yuriko Yamamoto",
     ]
+
+    # The space we need for 25 agents
+    offset = 2
+    x, y = (68, 58)
+    s = set()
+    for i in range(x - offset, x + offset + 1):
+        for j in range(y - offset, y + offset + 1):
+            s.add((i, j))
+
     for name in agent_data:
         sprite_name = convert_to_sprite_name(name)
+        x, y = s.pop()
+
         Agent.objects.create(
-            name=name, sprite_name=sprite_name, curr_position_x=68, curr_position_y=58
+            name=name,
+            sprite_name=sprite_name,
+            curr_position_x=x,
+            curr_position_y=y,
+            simulation=Simulation.objects.first(),
         )
 
 
@@ -50,7 +66,8 @@ def revert_load_agent_data(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("agents", "0001_initial"),
+        ("agents", "0002_initial"),
+        ("simulations", "0002_auto_20240110_1325"),
     ]
 
     operations = [

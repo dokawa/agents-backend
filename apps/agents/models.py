@@ -2,25 +2,38 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 
 from apps.agents.path.utils import get_shortest_path, sample_tiles
+from apps.simulations.models import Simulation
 
 
 class Agent(TimeStampedModel):
     name = models.CharField(max_length=50, unique=False)
+    simulation = models.ForeignKey(
+        Simulation,
+        related_name="agents",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     sprite_name = models.CharField(max_length=50, unique=False)
+
+    # These are denormalization
     curr_position_x = models.PositiveIntegerField(null=True, blank=True, default=0)
     curr_position_y = models.PositiveIntegerField(null=True, blank=True, default=0)
-
-    last_position_x = models.PositiveIntegerField(null=True, blank=True)
-    last_position_y = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         unique_together = ("name", "sprite_name")
 
     def __str__(self):
-        return f"{self.name} | ({self.last_position_x}, {self.last_position_y})"
+        return f"{self.name} | ({self.curr_position_x}, {self.curr_position_y})"
 
     def curr_tile(self):
         return (self.curr_position_x, self.curr_position_y)
+
+    def get_last_action(self):
+        # event = self.events.last()
+
+        # TODO figure out events
+        return (self.name, "doing", "something")
 
     def move(self, maze, personas, curr_tile, curr_time):
         # """
@@ -157,7 +170,7 @@ class Agent(TimeStampedModel):
         # target_tiles = [[0, 0]]
 
         target_tiles = sample_tiles(target_tiles)
-        print(f"len {len(target_tiles)}")
+
         # solve_target_tile_conflicts(self, maze, personas, target_tiles)
 
         # Setting up the next immediate step. We stay at our curr_tile if there is
@@ -187,47 +200,3 @@ class Agent(TimeStampedModel):
         # persona.scratch.act_path_set = True
 
         return path
-        # return [
-        #     (80, 19),
-        #     (79, 19),
-        #     (78, 19),
-        #     (77, 19),
-        #     (76, 19),
-        #     (75, 19),
-        #     (75, 20),
-        #     (75, 21),
-        #     (76, 21),
-        #     (76, 22),
-        #     (76, 23),
-        #     (76, 24),
-        #     (76, 25),
-        #     (77, 25),
-        #     (77, 26),
-        #     (77, 27),
-        #     (77, 28),
-        #     (77, 29),
-        #     (77, 30),
-        #     (78, 30),
-        #     (79, 30),
-        #     (80, 30),
-        #     (81, 30),
-        #     (82, 30),
-        #     (83, 30),
-        #     (84, 30),
-        #     (84, 29),
-        #     (85, 29),
-        #     (86, 29),
-        #     (87, 29),
-        #     (87, 28),
-        #     (87, 27),
-        #     (87, 26),
-        #     (87, 25),
-        #     (87, 24),
-        #     (88, 24),
-        #     (88, 23),
-        #     (88, 22),
-        #     (87, 22),
-        #     (87, 21),
-        #     (87, 20),
-        #     (86, 20),
-        # ]

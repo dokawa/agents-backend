@@ -6,6 +6,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("agents/", include("apps.agents.urls")),
     path("simulations/", include("apps.simulations.urls")),
+    path("events/", include("apps.simulations.urls")),
 ]
 
 if settings.DEBUG:

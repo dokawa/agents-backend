@@ -7,8 +7,8 @@ Description: This defines the "Perceive" module for generative agents.
 import math
 import sys
 
-from apps.agents.agent.utils import get_embedding
 from apps.agents.constants import ATTENTION_BANDWIDTH, RETENTION, VISION_RADIUS
+from apps.agents.memory_structures.utils import get_embedding
 
 sys.path.append("../../")
 
@@ -166,6 +166,7 @@ def get_perceived_events(maze, nearby_tiles, persona):
     # We will perceive events that take place in the same arena as the
     # persona's current arena.
     curr_arena_path = maze.get_tile_path(persona.curr_tile(), "arena")
+    print(curr_arena_path)
     # We do not perceive the same event twice (this can happen if an object is
     # extended across multiple tiles).
     percept_events_set = set()
@@ -183,7 +184,7 @@ def get_perceived_events(maze, nearby_tiles, persona):
                 # and the target tile.
                 dist = math.dist(
                     [tile[0], tile[1]],
-                    persona.curr_tile,
+                    persona.curr_tile(),
                 )
                 # Add any relevant events to our temp set/list with the distant info.
                 for event in tile_details["events"]:

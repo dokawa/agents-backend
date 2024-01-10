@@ -1,11 +1,21 @@
 from django.contrib import admin
 
-from apps.agents.models import Agent
+from apps.agents.admin import AgentInline
+from apps.simulations.event_model import Event
+from apps.simulations.models import Simulation
 
 
-class AgentAdmin(admin.ModelAdmin):
-    model = Agent
-    list_display = ["id", "name", "sprite_name"]
+class SimulationAdmin(admin.ModelAdmin):
+    model = Simulation
+    list_display = ("id", "name")
+    inlines = [AgentInline]
+    # raw_id_fields = ["agents"]
 
 
-admin.site.register(Agent, AgentAdmin)
+class EventAdmin(admin.ModelAdmin):
+    model = Event
+    list_display = ["id", "agent", "simulation", "type", "position_x", "position_y"]
+
+
+admin.site.register(Simulation, SimulationAdmin)
+admin.site.register(Event, EventAdmin)

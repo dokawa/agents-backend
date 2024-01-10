@@ -17,9 +17,10 @@ Including another URLconf
 
 from rest_framework import routers
 
-from apps.simulations.views import SimulationViewset
+from apps.simulations.views import EventViewSet, SimulationViewSet
 
 router = routers.DefaultRouter()
-router.register(r"simulation", SimulationViewset, basename="simulation")
+router.register(r"simulation", SimulationViewSet, basename="simulation")
+router.register(r"event", EventViewSet, basename="event")
 
 urlpatterns = router.urls

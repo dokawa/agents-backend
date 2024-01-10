@@ -337,6 +337,7 @@ class Maze:
           curr_event: Current event triple.
             e.g., ('double studio:double studio:bedroom 2:bed', None,
                     None)
+                    (Percy Liang, teach, students)
           tile: The tile coordinate of our interest in (x, y) form.
         OUPUT:
           None
@@ -394,3 +395,11 @@ class Maze:
                 else:
                     print("  ", end="")
             print()
+
+    def add_simulation_events(self, simulation):
+        for agent in simulation.agents.all():
+            action = agent.get_last_action()
+            tile = agent.curr_tile()
+            description = "doing something"
+            event = (self.get_tile_path(tile, "arena"), action, None, description)
+            self.add_event_from_tile(event, tile)

@@ -2,6 +2,7 @@ import csv
 import json
 
 from django.contrib.staticfiles import finders
+from django.db import models
 
 
 def get_maze_meta(matrix_path):
@@ -50,16 +51,23 @@ def format_step_response(starting_step, agents, paths):
 
     response = defaultdict(dict)
 
-    print(paths)
     largest_path_length = max((len(path) for path in paths.values() if path))
     for i in range(starting_step, starting_step + largest_path_length):
         for agent in agents:
             path = paths[agent.name]
             index = i - starting_step
             if path and index < len(path):
-                response[index].update({agent.name: path[index]})
+                response[index].update({agent.name: {"movement": path[index]}})
     return response
 
 
 def get_agent_handle(agent_name):
     return agent_name.replace(" ", "_").lower()
+
+
+class EventType(models.TextChoices):
+    MOVEMENT = "movement", "Movement"
+    THOUGHT = "thought", "Thought"
+    OCCURENCE = "occurence", "Occurence"
+    CHAT = "chat", "Chat"
+    ACTION = "action", "Action"  # TODO check if needed
