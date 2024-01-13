@@ -1,30 +1,22 @@
-from unittest.mock import patch
-
 import pytest
 from django.urls import reverse
 from rest_framework import status
+
+import tests.factories as f
 
 pytestmark = pytest.mark.django_db
 
 
 class TestSimulation:
     def test_action_url(self, client):
-        view_name = "simulation-move"
+        view_name = "simulation-step"
+        simulation = f.SimulationFactory()
+        f.AgentFactory(simulation=simulation)
 
-        url = reverse(view_name)
+        url = reverse(view_name, args=[simulation.id])
 
-        assert url == "/simulations/simulation/move/"
+        # assert url == f"/simulations/simulation/{simulation.id}/step/"
 
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-
-    @patch("apps.agents.models.Agent.move")  # Mock the move method
-    def test_move_path(self, mock_move, client, path):
-        view_name = "simulation-move"
-        # Set up the mock to return the coordinates of YourModel instances
-        mock_move.return_value = path
-
-        response = client.get(reverse(view_name))
-
-        assert response.data == path

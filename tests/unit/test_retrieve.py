@@ -114,7 +114,7 @@ class TestRetrieve(unittest.TestCase):
 
         # Creating a vector in EventFactory was returning the same one for both
         # TODO check how to create it in factory
-        f.EventFactory(
+        event_1 = f.EventFactory(
             agent=agent,
             simulation=simulation,
             embedding=generate_random_normalized_vector(),
@@ -125,7 +125,7 @@ class TestRetrieve(unittest.TestCase):
             embedding=generate_random_normalized_vector(),
         )
 
-        action = "doing something"
-        retrieved = retrieve(agent, simulation, [action])
+        retrieved = retrieve(agent, simulation, event_1)
 
-        assert retrieved[action][0].score != 0
+        assert retrieved[0].score != 0
+        assert retrieved[1].score != 0

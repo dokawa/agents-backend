@@ -51,7 +51,7 @@ def format_step_response(starting_step, agents, paths):
 
     response = defaultdict(dict)
 
-    largest_path_length = max((len(path) for path in paths.values() if path))
+    largest_path_length = max((len(path) for path in paths.values() if path), default=0)
     for i in range(starting_step, starting_step + largest_path_length):
         for agent in agents:
             path = paths[agent.name]

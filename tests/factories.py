@@ -33,3 +33,4 @@ class EventFactory(DjangoModelFactory):
         model = Event
 
     poignancy = factory.fuzzy.FuzzyInteger(1, 10)
+    simulation = factory.SubFactory("tests.factories.SimulationFactory")

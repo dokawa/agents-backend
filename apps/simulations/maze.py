@@ -4,6 +4,7 @@ Description: Defines the Maze class, which represents the map of the simulated
 world in a 2-dimensional matrix.
 """
 
+
 import math
 
 from django.contrib.staticfiles import finders
@@ -161,21 +162,23 @@ class Maze:
 
                 row += [tile_details]
             self.tiles += [row]
+
+        # TODO add game object events (maybe create a "world" agent)
         # Each game object occupies an event in the tile. We are setting up the
         # default event value here.
-        for i in range(self.maze_height):
-            for j in range(self.maze_width):
-                if self.tiles[i][j]["game_object"]:
-                    object_name = ":".join(
-                        [
-                            self.tiles[i][j]["world"],
-                            self.tiles[i][j]["sector"],
-                            self.tiles[i][j]["arena"],
-                            self.tiles[i][j]["game_object"],
-                        ]
-                    )
-                    go_event = (object_name, None, None, None)
-                    self.tiles[i][j]["events"].add(go_event)
+        # for i in range(self.maze_height):
+        #     for j in range(self.maze_width):
+        #         if self.tiles[i][j]["game_object"]:
+        #             address = ":".join(
+        #                 [
+        #                     self.tiles[i][j]["world"],
+        #                     self.tiles[i][j]["sector"],
+        #                     self.tiles[i][j]["arena"],
+        #                     self.tiles[i][j]["game_object"],
+        #                 ]
+        #             )
+        #             go_event = Event.objects.create(address=address, simulation=simulation)
+        #             self.tiles[i][j]["events"].add(go_event)
 
         # Reverse tile access.
         # <self.address_tiles> -- given a string address, we return a set of all
@@ -253,7 +256,7 @@ class Maze:
         y = tile[1]
         return self.tiles[y][x]
 
-    def get_tile_path(self, tile, level):
+    def get_address_from_tile(self, tile, level):
         """
         Get the tile string address given its coordinate. You designate the level
         by giving it a string level description.
@@ -395,11 +398,3 @@ class Maze:
                 else:
                     print("  ", end="")
             print()
-
-    def add_simulation_events(self, simulation):
-        for agent in simulation.agents.all():
-            action = agent.get_last_action()
-            tile = agent.curr_tile()
-            description = "doing something"
-            event = (self.get_tile_path(tile, "arena"), action, None, description)
-            self.add_event_from_tile(event, tile)

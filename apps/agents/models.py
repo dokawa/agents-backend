@@ -1,6 +1,9 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
 
+from apps.agents.agent.perceive import perceive
+from apps.agents.agent.retrieve import retrieve
+from apps.agents.agent.select import select
 from apps.agents.path.utils import get_shortest_path, sample_tiles
 from apps.simulations.models import Simulation
 
@@ -29,13 +32,11 @@ class Agent(TimeStampedModel):
     def curr_tile(self):
         return (self.curr_position_x, self.curr_position_y)
 
-    def get_last_action(self):
-        # event = self.events.last()
+    def get_last_event(self):
+        last_event = self.events.all().order_by("created").last()
+        return last_event
 
-        # TODO figure out events
-        return (self.name, "doing", "something")
-
-    def move(self, maze, personas, curr_tile, curr_time):
+    def step(self, simulation, maze, curr_tile, curr_time):
         # """
         # This is the main cognitive function where our main sequence is called.
         #
@@ -69,9 +70,11 @@ class Agent(TimeStampedModel):
         # self.scratch.curr_time = curr_time
         #
         # # Main cognitive sequence begins here.
-        perceived = self.perceive(maze)
-        retrieved = self.retrieve(perceived)
-        # # plan = self.plan(maze, personas, new_day, retrieved)
+        agents = simulation.agents.all()
+        perceived = perceive(self, maze)
+        selected = select(self, perceived)
+        retrieved = retrieve(self, simulation, selected)
+        # plan = self.plan(maze, agents, new_day, retrieved)
         # # self.reflect()
         #
         # # <execution> is a triple set that contains the following components:
@@ -82,7 +85,7 @@ class Agent(TimeStampedModel):
         # #   @ double studio:double studio:common room:sofa
 
         plan = "the Ville:Giorgio Rossi's apartment:main room"
-        return self.execute(maze, personas, plan)
+        return self.execute(maze, agents, plan)
 
     def execute(self, maze, personas, plan):
         """
@@ -166,9 +169,6 @@ class Agent(TimeStampedModel):
         else:
             maze.address_tiles["Johnson Park:park:park garden"]  # ERRORRRRRRR
 
-        # # TODO remove stub target_tiles
-        # target_tiles = [[0, 0]]
-
         target_tiles = sample_tiles(target_tiles)
 
         # solve_target_tile_conflicts(self, maze, personas, target_tiles)
@@ -186,13 +186,6 @@ class Agent(TimeStampedModel):
         # execution = ret, self.scratch.act_pronunciatio, description
 
         path = get_shortest_path(self, maze, target_tiles)
-
-        # path = get_path(
-        #     maze.collision_maze,
-        #     (self.curr_position_x, self.curr_position_y),
-        #     [86, 20],
-        #     COLLISION_BLOCK_ID,
-        # )
 
         # # Actually setting the <planned_path> and <act_path_set>. We cut the
         # # first element in the planned_path because it includes the curr_tile.

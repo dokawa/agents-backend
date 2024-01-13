@@ -19,15 +19,12 @@ class TestPerceive(unittest.TestCase):
         assert nearby_tiles
 
     def test_perceived_events(self):
-        maze = Maze("the_ville")
-
-        f.AgentFactory(curr_position_x=81, curr_position_y=46)
-
+        other_agent = f.AgentFactory(curr_position_x=81, curr_position_y=46)
         agent = f.AgentFactory(curr_position_x=81, curr_position_y=45)
 
+        maze = Maze("the_ville")
         nearby_tiles = maze.get_nearby_tiles(agent.curr_tile(), VISION_RADIUS)
-
-        simulation = f.SimulationFactory(agents=[agent])
-        maze.add_simulation_events(simulation)
+        event = f.EventFactory(agent=other_agent)
+        maze.add_event_from_tile(event, other_agent.curr_tile())
         perception = get_perceived_events(maze, nearby_tiles, agent)
-        assert any([agent.name == p[1][0] for p in perception if p[1]])
+        assert any([other_agent == event.agent for event in perception])

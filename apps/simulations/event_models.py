@@ -10,6 +10,10 @@ from apps.simulations.utils import EventType
 
 class Event(TimeStampedModel):
     agent = models.ForeignKey(Agent, related_name="events", on_delete=models.CASCADE)
+    interacting_with = models.ForeignKey(
+        Agent, null=True, blank=True, on_delete=models.CASCADE
+    )
+
     simulation = models.ForeignKey(
         Simulation, related_name="events", on_delete=models.CASCADE
     )
@@ -26,6 +30,8 @@ class Event(TimeStampedModel):
     sim_time_expiration = models.DateTimeField(null=True, blank=True)
     sim_time_last_accessed = models.DateTimeField(null=True, blank=True)
 
+    address = models.CharField(max_length=255, null=True, blank=True)
+    visual_representation = models.CharField(max_length=15, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     poignancy = models.PositiveIntegerField(null=True, blank=True)
 
@@ -35,3 +41,6 @@ class Event(TimeStampedModel):
 
     def spo_summary(self):
         return (self.subject, self.predicate, self.object)
+
+    def __repr__(self):
+        return f"{self.address}"

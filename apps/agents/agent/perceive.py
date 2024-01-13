@@ -54,9 +54,9 @@ def perceive(persona, maze):
 
     perceived_events = get_perceived_events(maze, nearby_tiles, persona)
 
-    ret_events = store_and_get_events(perceived_events, persona)
+    # ret_events = store_and_get_events(perceived_events, persona)
 
-    return ret_events
+    return perceived_events
 
 
 def store_and_get_events(perceived_events, persona):
@@ -165,7 +165,7 @@ def get_perceived_events(maze, nearby_tiles, persona):
     # PERCEIVE EVENTS.
     # We will perceive events that take place in the same arena as the
     # persona's current arena.
-    curr_arena_path = maze.get_tile_path(persona.curr_tile(), "arena")
+    curr_arena_path = maze.get_address_from_tile(persona.curr_tile(), "arena")
     print(curr_arena_path)
     # We do not perceive the same event twice (this can happen if an object is
     # extended across multiple tiles).
@@ -179,7 +179,7 @@ def get_perceived_events(maze, nearby_tiles, persona):
         tile_details = maze.access_tile(tile)
 
         if tile_details["events"]:
-            if maze.get_tile_path(tile, "arena") == curr_arena_path:
+            if maze.get_address_from_tile(tile, "arena") == curr_arena_path:
                 # This calculates the distance between the persona's current tile,
                 # and the target tile.
                 dist = math.dist(
