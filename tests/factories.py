@@ -1,7 +1,8 @@
-import factory
+import factory.fuzzy
 from factory.django import DjangoModelFactory
 
 from apps.agents.models import Agent
+from apps.simulations.event_models import Event
 from apps.simulations.models import Simulation
 
 
@@ -25,3 +26,10 @@ class SimulationFactory(DjangoModelFactory):
             return
 
         self.agents.add(*extracted)
+
+
+class EventFactory(DjangoModelFactory):
+    class Meta:
+        model = Event
+
+    poignancy = factory.fuzzy.FuzzyInteger(1, 10)

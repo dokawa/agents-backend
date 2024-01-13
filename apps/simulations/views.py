@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.agents.models import Agent
-from apps.simulations.event_model import Event
+from apps.simulations.event_models import Event
 from apps.simulations.maze import Maze
 from apps.simulations.serializers import EventSerializer
 from apps.simulations.utils import EventType, format_step_response
@@ -12,7 +12,7 @@ from apps.simulations.utils import EventType, format_step_response
 class SimulationViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["GET"])
     def step(self, request, pk=None, *args, **kwargs):
-        maze = Maze(self, "the_ville")
+        maze = Maze("the_ville")
         agents = Agent.objects.all()
         for agent in agents:
             action = agent.get_last_action()

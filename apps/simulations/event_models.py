@@ -27,7 +27,7 @@ class Event(TimeStampedModel):
     sim_time_last_accessed = models.DateTimeField(null=True, blank=True)
 
     description = models.TextField(null=True, blank=True)
-    poignancy = models.FloatField(null=True, blank=True)
+    poignancy = models.PositiveIntegerField(null=True, blank=True)
 
     subject = models.CharField(max_length=255, null=True, blank=True)
     predicate = models.CharField(max_length=255, null=True, blank=True)

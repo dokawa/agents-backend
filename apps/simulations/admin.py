@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from apps.agents.admin import AgentInline
-from apps.simulations.event_model import Event
+from apps.simulations.event_models import Event
 from apps.simulations.models import Simulation
 
 

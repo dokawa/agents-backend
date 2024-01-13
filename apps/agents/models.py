@@ -69,8 +69,8 @@ class Agent(TimeStampedModel):
         # self.scratch.curr_time = curr_time
         #
         # # Main cognitive sequence begins here.
-        # # perceived = self.perceive(maze)
-        # # retrieved = self.retrieve(perceived)
+        perceived = self.perceive(maze)
+        retrieved = self.retrieve(perceived)
         # # plan = self.plan(maze, personas, new_day, retrieved)
         # # self.reflect()
         #

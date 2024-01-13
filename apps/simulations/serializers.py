@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.relations import PrimaryKeyRelatedField
 
 from ..agents.models import Agent
-from .event_model import Event
+from .event_models import Event
 from .models import Simulation
 
 
