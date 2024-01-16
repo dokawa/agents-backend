@@ -17,7 +17,6 @@ def print_maze(maze):
 
 
 def get_path(maze, start_tile, end_tile, collision_block_char, verbose=False):
-    print(f"{start_tile} | {end_tile}")
     # Since we use tile as start and end
     # We have to invert since for a list of lists row => y and col => x
     start = (start_tile[1], start_tile[0])
@@ -74,7 +73,6 @@ def path_finder_a_star(maze, start, end, collision_block_value, verbose=False):
         heapq.heappush(open_set, start_node)
 
         while open_set:
-            # print(f"{len(open_set)} {len(closed_set)}")
             current_node = heapq.heappop(open_set)
 
             if current_node.position == goal:
@@ -105,11 +103,6 @@ def path_finder_a_star(maze, start, end, collision_block_value, verbose=False):
 
     def neighbors(position, grid):
         row, col = position
-
-        if grid[row][col] == 32125:
-            print(f"{type(grid[row][col])} {grid[row][col]}")
-        if grid[row][col] == "32125":
-            print(f"{type(grid[row][col])} {grid[row][col]}")
 
         neighbors_list = [
             (row - 1, col),

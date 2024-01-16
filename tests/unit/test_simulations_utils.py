@@ -4,7 +4,7 @@ import pytest
 
 import tests.factories as f
 from apps.simulations.utils import (  # Replace 'your_module' with the actual module containing the function
-    format_step_response,
+    format_simulation_response,
     get_maze_meta,
 )
 
@@ -20,8 +20,9 @@ class TestGetSimulationMeta(unittest.TestCase):
     def test_response_format(self):
         agent = f.AgentFactory()
         path = [[0, 1], [0, 2]]
-        formatted_data = format_step_response(0, [agent], {agent.name: path})
+        formatted_data = format_simulation_response(0, [agent], {agent.name: path})
 
-        assert 0 in formatted_data
-        assert agent.name in formatted_data[0]
-        assert formatted_data[0][agent.name]["movement"] == path[0]
+        step = 1
+        assert step in formatted_data
+        assert agent.name in formatted_data[step]
+        assert formatted_data[step][agent.name]["movement"] == path[0]

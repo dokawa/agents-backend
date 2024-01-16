@@ -42,5 +42,8 @@ class Event(TimeStampedModel):
     def spo_summary(self):
         return (self.subject, self.predicate, self.object)
 
+    def __str__(self):
+        return self.__repr__()
+
     def __repr__(self):
-        return f"{self.address}"
+        return f"{self.description} @ {self.address}"

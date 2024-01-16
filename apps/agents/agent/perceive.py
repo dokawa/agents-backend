@@ -166,7 +166,6 @@ def get_perceived_events(maze, nearby_tiles, persona):
     # We will perceive events that take place in the same arena as the
     # persona's current arena.
     curr_arena_path = maze.get_address_from_tile(persona.curr_tile(), "arena")
-    print(curr_arena_path)
     # We do not perceive the same event twice (this can happen if an object is
     # extended across multiple tiles).
     percept_events_set = set()

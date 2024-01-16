@@ -43,9 +43,6 @@ class TestEmbedding(unittest.TestCase):
 
         chunks, lens = create_chunks(sentence, 2, tokenizer)
 
-        for c in chunks:
-            print(tokenizer.decode(c))
-
         assert any(
             [tokenizer.decode(c) == "1" for c in chunks]
         )  # linebreak is not included in chunk
@@ -117,5 +114,4 @@ class TestEmbedding(unittest.TestCase):
 
         chunks, lens = create_chunks(sentence, MAX_TOKENS, tokenizer)
         for c in chunks:
-            print(tokenizer.decode(c))
             assert len(c) < MAX_TOKENS

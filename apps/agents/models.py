@@ -1,10 +1,12 @@
 from django.db import models
+from django.db.models import JSONField
 from model_utils.models import TimeStampedModel
 
+from apps.agents.agent.classes import ActionPlanType
+from apps.agents.agent.execute import execute
 from apps.agents.agent.perceive import perceive
-from apps.agents.agent.retrieve import retrieve
+from apps.agents.agent.plan import plan
 from apps.agents.agent.select import select
-from apps.agents.path.utils import get_shortest_path, sample_tiles
 from apps.simulations.models import Simulation
 
 
@@ -23,6 +25,17 @@ class Agent(TimeStampedModel):
     curr_position_x = models.PositiveIntegerField(null=True, blank=True, default=0)
     curr_position_y = models.PositiveIntegerField(null=True, blank=True, default=0)
 
+    chatting_with = models.OneToOneField(
+        "Agent", null=True, blank=True, on_delete=models.SET_NULL
+    )
+    plan = models.OneToOneField(
+        "ActionPlan",
+        null=True,
+        blank=True,
+        related_name="agent",
+        on_delete=models.SET_NULL,
+    )
+
     class Meta:
         unique_together = ("name", "sprite_name")
 
@@ -36,7 +49,7 @@ class Agent(TimeStampedModel):
         last_event = self.events.all().order_by("created").last()
         return last_event
 
-    def step(self, simulation, maze, curr_tile, curr_time):
+    def execute_step(self, simulation, maze, curr_tile, curr_time):
         # """
         # This is the main cognitive function where our main sequence is called.
         #
@@ -73,8 +86,9 @@ class Agent(TimeStampedModel):
         agents = simulation.agents.all()
         perceived = perceive(self, maze)
         selected = select(self, perceived)
-        retrieved = retrieve(self, simulation, selected)
-        # plan = self.plan(maze, agents, new_day, retrieved)
+        # retrieved = retrieve(self, simulation, selected)
+        planned = plan(self, simulation, maze, None, selected)
+
         # # self.reflect()
         #
         # # <execution> is a triple set that contains the following components:
@@ -84,112 +98,33 @@ class Agent(TimeStampedModel):
         # #   writing her next novel (editing her novel)
         # #   @ double studio:double studio:common room:sofa
 
-        plan = "the Ville:Giorgio Rossi's apartment:main room"
-        return self.execute(maze, agents, plan)
+        # plan = "the Ville:Giorgio Rossi's apartment:main room"
+        return execute(self, maze, agents, planned)
 
-    def execute(self, maze, personas, plan):
-        """
-        Given a plan (action's string address), we execute the plan (actually
-        outputs the tile coordinate path and the next coordinate for the
-        persona).
 
-        INPUT:
-          persona: Current <Persona> instance.
-          maze: An instance of current <Maze>.
-          personas: A dictionary of all personas in the world.
-          plan: This is a string address of the action we need to execute.
-             It comes in the form of "{world}:{sector}:{arena}:{game_objects}".
-             It is important that you access this without doing negative
-             indexing (e.g., [-1]) because the latter address elements may not be
-             present in some cases.
-             e.g., "dolores double studio:double studio:bedroom 1:bed"
+class ActionPlan(models.Model):
+    type = models.CharField(
+        max_length=32, choices=ActionPlanType.choices, null=True, blank=True
+    )
+    address = models.CharField(max_length=255, null=True, blank=True)
+    start_time = models.DateTimeField(null=True, blank=True)
+    duration = models.PositiveIntegerField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    pronunciatio = models.TextField(null=True, blank=True)
 
-        OUTPUT:
-          execution
-        """
-        # if "<random>" in plan and persona.scratch.planned_path == []:
-        #     persona.scratch.act_path_set = False
+    chat = models.TextField(null=True, blank=True)
+    chatting_with_buffer = models.JSONField(null=True, blank=True, default=dict)
+    chatting_end_time = models.DateTimeField(null=True, blank=True)
 
-        # <act_path_set> is set to True if the path is set for the current action.
-        # It is False otherwise, and means we need to construct a new path.
-        # if not persona.scratch.act_path_set:
-        #     # <target_tiles> is a list of tile coordinates where the persona may go
-        #     # to execute the current action. The goal is to pick one of them.
-        #     target_tiles = None
-        #
-        #     print('aldhfoaf/????')
-        #     print(plan)
-        #
-        #     if "<persona>" in plan:
-        #         # Executing persona-persona interaction.
-        #         target_p_tile = (personas[plan.split("<persona>")[-1].strip()]
-        #                          .scratch.curr_tile)
-        #         potential_path = get_path(maze.collision_maze,
-        #                                      [persona.curr_position_x, persona.curr_position_y],
-        #                                      target_p_tile,
-        #                                      COLLISION_BLOCK_ID)
-        #         if len(potential_path) <= 2:
-        #             target_tiles = [potential_path[0]]
-        #         else:
-        #             potential_1 = get_path(maze.collision_maze,
-        #                                       [persona.curr_position_x, persona.curr_position_y],
-        #                                       potential_path[int(len(potential_path) / 2)],
-        #                                       COLLISION_BLOCK_ID)
-        #             potential_2 = get_path(maze.collision_maze,
-        #                                       [persona.curr_position_x, persona.curr_position_y],
-        #                                       potential_path[int(len(potential_path) / 2) + 1],
-        #                                       COLLISION_BLOCK_ID)
-        #             if len(potential_1) <= len(potential_2):
-        #                 target_tiles = [potential_path[int(len(potential_path) / 2)]]
-        #             else:
-        #                 target_tiles = [potential_path[int(len(potential_path) / 2 + 1)]]
+    planned_path = JSONField(null=True, blank=True, default=list)
 
-        # elif "<waiting>" in plan:
-        #     # Executing interaction where the persona has decided to wait before
-        #     # executing their action.
-        #     x = int(plan.split()[1])
-        #     y = int(plan.split()[2])
-        #     target_tiles = [[x, y]]
-        #
-        # elif "<random>" in plan:
-        #     # Executing a random location action.
-        #     plan = ":".join(plan.split(":")[:-1])
-        #     target_tiles = maze.address_tiles[plan]
-        #     target_tiles = random.sample(list(target_tiles), 1)
+    def advance_in_path(self):
+        if self.planned_path:
+            self.planned_path = self.planned_path[1:]
+            self.save()
 
-        # else:
-        # This is our default execution. We simply take the persona to the
-        # location where the current action is taking place.
-        # Retrieve the target addresses. Again, plan is an action address in its
-        # string form. <maze.address_tiles> takes this and returns candidate
-        # coordinates.
+    def __str__(self):
+        return f"{self.description}"
 
-        if plan in maze.address_tiles:
-            target_tiles = maze.address_tiles[plan]
-        else:
-            maze.address_tiles["Johnson Park:park:park garden"]  # ERRORRRRRRR
-
-        target_tiles = sample_tiles(target_tiles)
-
-        # solve_target_tile_conflicts(self, maze, personas, target_tiles)
-
-        # Setting up the next immediate step. We stay at our curr_tile if there is
-        # no <planned_path> left, but otherwise, we go to the next tile in the path.
-        # ret = [self.curr_position_x, self.curr_position_y]
-        # if self.scratch.planned_path:
-        #     ret = self.scratch.planned_path[0]
-        #     self.scratch.planned_path = self.scratch.planned_path[1:]
-        #
-        # description = f"{self.scratch.act_description}"
-        # description += f" @ {self.scratch.act_address}"
-        #
-        # execution = ret, self.scratch.act_pronunciatio, description
-
-        path = get_shortest_path(self, maze, target_tiles)
-
-        # # Actually setting the <planned_path> and <act_path_set>. We cut the
-        # # first element in the planned_path because it includes the curr_tile.
-        # persona.scratch.planned_path = path[1:]
-        # persona.scratch.act_path_set = True
-
-        return path
+    def __repr__(self):
+        return self.__str__()

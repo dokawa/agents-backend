@@ -17,18 +17,22 @@ def select(agent, perceived):
                     ["events"] = [<ConceptNode>, ...],
                     ["thoughts"] = [<ConceptNode>, ...] }
     """
-    # Always choose persona first.
-
-    priority = [event for event in perceived if event.agent != agent]
-    if priority:
-        return random.choice(priority)
-
+    # Always choose persona first. We remove same agent
     priority = [
         event
         for event in perceived
-        if event.type == EventType.OCCURENCE or event.type == EventType.ACTION
+        if (event.agent != agent and not event.agent.chatting_with)
     ]
     if priority:
-        return random.choice(priority)
+        selected = random.choice(priority)
+        print(f"  selected: {selected}")
+
+    # priority = [
+    #     event
+    #     for event in perceived
+    #     if event.type == EventType.OCCURENCE or event.type == EventType.ACTION
+    # ]
+    # if priority:
+    #     return random.choice(priority)
     # TODO check if need to skip idle
     return None

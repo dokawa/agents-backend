@@ -11,6 +11,7 @@ class AgentFactory(DjangoModelFactory):
         model = Agent
 
     name = factory.Faker("name")
+    simulation = factory.SubFactory("tests.factories.SimulationFactory")
 
 
 class SimulationFactory(DjangoModelFactory):
@@ -32,5 +33,6 @@ class EventFactory(DjangoModelFactory):
     class Meta:
         model = Event
 
+    agent = factory.SubFactory("tests.factories.AgentFactory")
     poignancy = factory.fuzzy.FuzzyInteger(1, 10)
     simulation = factory.SubFactory("tests.factories.SimulationFactory")

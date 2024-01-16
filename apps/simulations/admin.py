@@ -15,6 +15,7 @@ class SimulationAdmin(admin.ModelAdmin):
 class EventAdmin(admin.ModelAdmin):
     model = Event
     list_display = ["id", "agent", "simulation", "type", "position_x", "position_y"]
+    list_filter = ["agent__name"]
 
 
 admin.site.register(Simulation, SimulationAdmin)

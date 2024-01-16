@@ -8,7 +8,7 @@ from apps.agents.agent.select import select
 pytestmark = pytest.mark.django_db
 
 
-class TestPick(unittest.TestCase):
+class TestSelect(unittest.TestCase):
     def test_choose_agent_first(self):
         agent = f.AgentFactory()
         agent_2 = f.AgentFactory()

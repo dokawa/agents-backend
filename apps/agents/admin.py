@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.agents.models import Agent
+from apps.agents.models import ActionPlan, Agent
 
 
 class AgentAdmin(admin.ModelAdmin):
@@ -12,4 +12,9 @@ class AgentInline(admin.TabularInline):
     model = Agent
 
 
+class ActionPlanAdmin(admin.ModelAdmin):
+    model = ActionPlan
+
+
 admin.site.register(Agent, AgentAdmin)
+admin.site.register(ActionPlan, ActionPlanAdmin)

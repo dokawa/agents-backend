@@ -46,7 +46,7 @@ def read_file_to_list(curr_file, header=False, strip_trail=True):
         return analysis_list[0], analysis_list[1:]
 
 
-def format_step_response(starting_step, agents, paths):
+def format_simulation_response(starting_step, agents, paths):
     from collections import defaultdict
 
     response = defaultdict(dict)
@@ -56,8 +56,28 @@ def format_step_response(starting_step, agents, paths):
         for agent in agents:
             path = paths[agent.name]
             index = i - starting_step
-            if path and index < len(path):
-                response[index].update({agent.name: {"movement": path[index]}})
+            if path[index] and index < len(path):
+                response[index + 1].update(
+                    {
+                        agent.name: {
+                            "movement": path[index],
+                            "pronunciatio": "💬💬💬U+1F4AC",
+                        }
+                    }
+                )
+    return response
+
+
+def format_response(step, agents, paths):
+    from collections import defaultdict
+
+    response = defaultdict(dict)
+
+    for agent in agents:
+        response[step][agent.name] = {"pronunciatio": "💬💬💬U+1F4AC"}
+        if paths[agent.name]:
+            response[step][agent.name].update({"movement": paths[agent.name]})
+
     return response
 
 
