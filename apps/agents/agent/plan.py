@@ -9,7 +9,7 @@ import random
 from apps.agents.agent.classes import ReactionType
 from apps.agents.models import ActionPlanType
 from apps.agents.path.utils import get_shortest_path
-from apps.agents.utils import arena_addresses
+from apps.agents.utils import public_arena_addresses
 
 
 def plan(agent, simulation, maze, new_day, selected):
@@ -65,7 +65,9 @@ def plan(agent, simulation, maze, new_day, selected):
     if action_plan and action_plan.planned_path:
         return action_plan
 
-    if selected:
+    print(f"========= CAHT", agent.chatting_with)
+    print(f"=========== sel", selected)
+    if selected and not agent.chatting_with:
         reaction_mode, other_agent = decide_reaction(agent, selected, simulation)
         if reaction_mode != ReactionType.DO_NOT_REACT:
             # If we do want to chat, then we generate conversation
@@ -73,9 +75,6 @@ def plan(agent, simulation, maze, new_day, selected):
                 # _chat_react(maze, agent, selected, reaction_mode, simulation)
 
                 print(f" plan | existing plan: {action_plan}")
-
-                if action_plan:
-                    action_plan.delete()
 
                 chat_message = "Hi"
                 target_tile = other_agent.curr_tile()
@@ -88,7 +87,7 @@ def plan(agent, simulation, maze, new_day, selected):
                 address = maze.get_address_from_tile(target_tile, "arena")
                 print(f"  plan | path: {path}")
                 description = f"Chatting with {other_agent.name}"
-                pronunciatio = "💬💬💬U+1F4AC"
+                pronunciatio = "💬💬💬1F4AC"
 
                 agent.chatting_with = other_agent
                 action_plan = ActionPlan.objects.create(
@@ -100,6 +99,7 @@ def plan(agent, simulation, maze, new_day, selected):
                     planned_path=path,
                 )
                 agent.plan = action_plan
+                # other_agent.save()
                 agent.save()
                 return action_plan
             elif reaction_mode == ReactionType.WAIT:
@@ -132,7 +132,7 @@ def plan(agent, simulation, maze, new_day, selected):
     #     if agent_name != agent.scratch.chatting_with:
     #         agent.scratch.chatting_with_buffer[agent_name] -= 1
 
-    address = random.choice(arena_addresses)
+    address = random.choice(public_arena_addresses)
     # print(f"======= plan | random address: {address}")
     target_tiles = list(maze.address_tiles[address])
     print(f" plan | random {agent.curr_tile()}")
@@ -142,7 +142,7 @@ def plan(agent, simulation, maze, new_day, selected):
         type=ActionPlanType.MOVE,
         address=address,
         description="Random",
-        pronunciatio="U+1F6B6",
+        pronunciatio="1F6B6",
         planned_path=path,
     )
     agent.plan = plan

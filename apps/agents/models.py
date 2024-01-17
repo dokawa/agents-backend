@@ -11,6 +11,9 @@ from apps.simulations.models import Simulation
 
 
 class Agent(TimeStampedModel):
+    class Meta:
+        unique_together = ("name", "sprite_name")
+
     name = models.CharField(max_length=50, unique=False)
     simulation = models.ForeignKey(
         Simulation,
@@ -26,7 +29,7 @@ class Agent(TimeStampedModel):
     curr_position_y = models.PositiveIntegerField(null=True, blank=True, default=0)
 
     chatting_with = models.OneToOneField(
-        "Agent", null=True, blank=True, on_delete=models.SET_NULL
+        "self", null=True, blank=True, on_delete=models.SET_NULL
     )
     plan = models.OneToOneField(
         "ActionPlan",
@@ -36,37 +39,17 @@ class Agent(TimeStampedModel):
         on_delete=models.SET_NULL,
     )
 
-    class Meta:
-        unique_together = ("name", "sprite_name")
+    # This makes chatting_with relationship bidirectional
+    def save(self, *args, **kwargs):
+        super(Agent, self).save(*args, **kwargs)
+        if self.chatting_with:
+            self.chatting_with.chatting_with = self
 
-    def __str__(self):
-        return f"{self.name} | ({self.curr_position_x}, {self.curr_position_y})"
-
-    def curr_tile(self):
-        return (self.curr_position_x, self.curr_position_y)
-
-    def get_last_event(self):
-        last_event = self.events.all().order_by("created").last()
-        return last_event
-
-    def execute_step(self, simulation, maze, curr_tile, curr_time):
+    def execute_step(self, simulation, maze):
         # """
         # This is the main cognitive function where our main sequence is called.
         #
-        # INPUT:
-        #   maze: The Maze class of the current world.
-        #   personas: A dictionary that contains all agent instances
-        #   curr_tile: A tuple that designates the agent's current tile location
-        #              in (row, col) form. e.g., (58, 39)
-        #   curr_time: datetime instance that indicates the game's current time.
-        # OUTPUT:
-        #   execution: A triple set that contains the following components:
-        #     <next_tile> is a x,y coordinate. e.g., (58, 9)
-        #     <pronunciatio> is an emoji.
-        #     <description> is a string description of the movement. e.g.,
-        #     writing her next novel (editing her novel)
-        #     @ double studio:double studio:common room:sofa
-        # """
+
         # # Updating persona's scratch memory with <curr_tile>.
         # self.scratch.curr_tile = curr_tile
         #
@@ -90,8 +73,8 @@ class Agent(TimeStampedModel):
         planned = plan(self, simulation, maze, None, selected)
 
         # # self.reflect()
-        #
-        # # <execution> is a triple set that contains the following components:
+
+        # # <execution> return the next_tile:
         # # <next_tile> is a x,y coordinate. e.g., (58, 9)
         # # <pronunciatio> is an emoji. e.g., "\ud83d\udca4"
         # # <description> is a string description of the movement. e.g.,
@@ -100,6 +83,21 @@ class Agent(TimeStampedModel):
 
         # plan = "the Ville:Giorgio Rossi's apartment:main room"
         return execute(self, maze, agents, planned)
+
+    def update_position(self, x, y):
+        self.curr_position_x = x
+        self.curr_position_y = y
+        self.save()
+
+    def __str__(self):
+        return f"{self.name} | ({self.curr_position_x}, {self.curr_position_y})"
+
+    def curr_tile(self):
+        return (self.curr_position_x, self.curr_position_y)
+
+    def get_last_event(self):
+        last_event = self.events.all().order_by("created").last()
+        return last_event
 
 
 class ActionPlan(models.Model):

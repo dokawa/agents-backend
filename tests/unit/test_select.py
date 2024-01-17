@@ -14,8 +14,6 @@ class TestSelect(unittest.TestCase):
         agent_2 = f.AgentFactory()
         simulation = f.SimulationFactory()
 
-        # Creating a vector in EventFactory was returning the same one for both
-        # TODO check how to create it in factory
         event_1 = f.EventFactory(
             agent=agent,
             simulation=simulation,
@@ -29,4 +27,43 @@ class TestSelect(unittest.TestCase):
 
         chosen = select(agent, perceived)
 
+        assert not agent.chatting_with
         assert chosen.agent == agent_2
+
+    def test_do_not_pick_own_event(self):
+        agent = f.AgentFactory()
+
+        simulation = f.SimulationFactory()
+
+        event = f.EventFactory(
+            agent=agent,
+            simulation=simulation,
+        )
+
+        perceived = [event]
+
+        chosen = select(agent, perceived)
+
+        assert chosen is None
+
+    def test_do_not_pick_chatting_with(self):
+        simulation = f.SimulationFactory()
+        agent = f.AgentFactory(
+            simulation=simulation, curr_position_x=68, curr_position_y=59
+        )
+
+        other_agent = f.AgentFactory(
+            simulation=simulation, curr_position_x=68, curr_position_y=59
+        )
+        event_agent = f.AgentFactory(
+            simulation=simulation,
+            curr_position_x=68,
+            curr_position_y=58,
+            chatting_with=other_agent,
+        )
+
+        event = f.EventFactory(agent=event_agent, simulation=simulation)
+
+        chosen = select(agent, [event])
+
+        assert chosen is None

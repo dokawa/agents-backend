@@ -61,7 +61,7 @@ def format_simulation_response(starting_step, agents, paths):
                     {
                         agent.name: {
                             "movement": path[index],
-                            "pronunciatio": "💬💬💬U+1F4AC",
+                            "pronunciatio": "💬💬💬1F4AC",
                         }
                     }
                 )
@@ -74,7 +74,7 @@ def format_response(step, agents, paths):
     response = defaultdict(dict)
 
     for agent in agents:
-        response[step][agent.name] = {"pronunciatio": "💬💬💬U+1F4AC"}
+        response[step][agent.name] = {"pronunciatio": agent.plan.pronunciatio}
         if paths[agent.name]:
             response[step][agent.name].update({"movement": paths[agent.name]})
 

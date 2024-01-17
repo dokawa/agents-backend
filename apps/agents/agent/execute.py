@@ -83,8 +83,7 @@ def execute(agent, maze, personas, plan):
     if plan.planned_path:
         next_tile = plan.planned_path[0]
         plan.advance_in_path()
-        agent.curr_position_x, agent.curr_position_y = next_tile
-        agent.save()
+        agent.update_position(next_tile[0], next_tile[1])
         return next_tile
 
     # ret = [self.curr_position_x, self.curr_position_y]

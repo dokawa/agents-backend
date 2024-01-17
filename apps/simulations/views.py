@@ -4,15 +4,12 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.agents.serializers import AgentSerializer
 from apps.simulations.event_models import Event
 from apps.simulations.maze import Maze
 from apps.simulations.models import Simulation
 from apps.simulations.serializers import EventSerializer
-from apps.simulations.utils import (
-    EventType,
-    format_response,
-    format_simulation_response,
-)
+from apps.simulations.utils import EventType, format_response
 
 
 class SimulationViewSet(viewsets.GenericViewSet):
@@ -32,23 +29,23 @@ class SimulationViewSet(viewsets.GenericViewSet):
         paths = defaultdict(dict)
         for agent in agents:
             print(f"simulationViewset | agent: {agent.name}")
-            next_tile = agent.execute_step(simulation, maze, None, None)
+            next_tile = agent.execute_step(simulation, maze)
             if next_tile:
                 paths[agent.name] = next_tile
                 # Event.objects.create(type=EventType.MOVEMENT, agent=agent, simulation=simulation, position_x=next_tile[0], position_y=next_tile[1])
-                if (
-                    agent.curr_position_x != next_tile[0]
-                    and agent.curr_position_y != next_tile[1]
-                ):
-                    print(
-                        f"  TELEPORT {agent.curr_tile()} {agent.plan.planned_path} {agent.plan}"
-                    )
+
             print(f"  simulationViewset | agent: {agent.name} next_tile: {next_tile}")
 
         # serializer = AgentSerializer(agents, many=True)
         response = format_response(simulation.step, agents, paths)
         simulation.advance_step()
         return Response(response)
+
+    @action(detail=True, methods=["GET"])
+    def agents(self, request, pk=None, *args, **kwargs):
+        simulation = self.get_object()
+        serializer = AgentSerializer(simulation.agents.all(), many=True)
+        return Response(serializer.data)
 
     def get_or_create_last_event(self, agent, simulation, maze):
         # If a user does not have an event, we create a movement one
