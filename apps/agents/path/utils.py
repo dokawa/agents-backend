@@ -45,8 +45,8 @@ def get_shortest_path(persona, maze, target_tiles):
     closest_target_tile = None
     path = None
 
-    # TODO check this
-    for tile in target_tiles[:4]:
+    # TODO remove restriction
+    for tile in list(target_tiles)[:4]:
         # get_path takes a collision_mze and the curr_tile coordinate as
         # an input, and returns a list of coordinate tuples that becomes the
         # path.

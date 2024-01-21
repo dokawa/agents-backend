@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import timedelta
 
 from django.db import models
 from model_utils.models import TimeStampedModel
@@ -14,7 +14,7 @@ class Simulation(TimeStampedModel):
         return f"{ self.id } | {self.name}"
 
     def current_time(self):
-        return INITIAL_DATE + datetime.timedelta(seconds=self.step * SECONDS_PER_STEP)
+        return INITIAL_DATE + timedelta(seconds=self.step * SECONDS_PER_STEP)
 
     def advance_step(self):
         self.step += 1

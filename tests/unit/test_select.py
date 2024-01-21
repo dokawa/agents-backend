@@ -25,9 +25,9 @@ class TestSelect(unittest.TestCase):
 
         perceived = [event_1, event_2]
 
-        chosen = select(agent, perceived)
+        chosen = select(agent, perceived, simulation.current_time())
 
-        assert not agent.chatting_with
+        assert not agent.is_chatting()
         assert chosen.agent == agent_2
 
     def test_do_not_pick_own_event(self):
@@ -42,11 +42,11 @@ class TestSelect(unittest.TestCase):
 
         perceived = [event]
 
-        chosen = select(agent, perceived)
+        chosen = select(agent, perceived, simulation.current_time())
 
         assert chosen is None
 
-    def test_do_not_pick_chatting_with(self):
+    def test_do_not_select_chatting_with(self):
         simulation = f.SimulationFactory()
         agent = f.AgentFactory(
             simulation=simulation, curr_position_x=68, curr_position_y=59
@@ -59,11 +59,14 @@ class TestSelect(unittest.TestCase):
             simulation=simulation,
             curr_position_x=68,
             curr_position_y=58,
-            chatting_with=other_agent,
         )
 
-        event = f.EventFactory(agent=event_agent, simulation=simulation)
+        event = f.EventFactory(
+            agent=event_agent,
+            simulation=simulation,
+            interact_with=other_agent,
+        )
 
-        chosen = select(agent, [event])
+        chosen = select(agent, [event], simulation.current_time())
 
         assert chosen is None

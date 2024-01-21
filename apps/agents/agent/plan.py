@@ -5,159 +5,240 @@ File: plan.py
 Description: This defines the "Plan" module for generative agents.
 """
 import random
+from datetime import timezone
 
 from apps.agents.agent.classes import ReactionType
+from apps.agents.constants import SECONDS_PER_STEP
 from apps.agents.models import ActionPlanType
 from apps.agents.path.utils import get_shortest_path
-from apps.agents.utils import public_arena_addresses
+from apps.agents.utils import meeting_addresses
 
 
-def plan(agent, simulation, maze, new_day, selected):
-    """
-    Main cognitive function of the chain. It takes the retrieved memory and
-    perception, as well as the maze and the first day state to conduct both
-    the long term and short term planning for the persona.
+def plan(agent, simulation, maze, new_day, event):
+    # If a move action is finished
+    _process_finished_move_actions(agent, simulation, maze)
 
-    INPUT:
-      maze: Current <Maze> instance of the world.
-      personas: A dictionary that contains all persona names as keys, and the
-                Persona instance as values.
-      new_day: This can take one of the three values.
-        1) <Boolean> False -- It is not a "new day" cycle (if it is, we would
-           need to call the long term planning sequence for the persona).
-        2) <String> "First day" -- It is literally the start of a simulation,
-           so not only is it a new day, but also it is the first day.
-        2) <String> "New day" -- It is a new day.
-      retrieved: dictionary of dictionary. The first layer specifies an event,
-                 while the latter layer specifies the "curr_event", "events",
-                 and "thoughts" that are relevant.
-    OUTPUT
-      The target action address of the persona (persona.scratch.act_address).
-    """
-    from apps.agents.models import ActionPlan
+    if agent.plan:
+        return agent.plan
 
-    # PART 1: Generate the hourly schedule.
-    # if new_day:
-    #     _long_term_planning(persona, new_day)
-    # PART 2: If the current action has expired, we want to create a new plan.
-    # if agent.scratch.act_check_finished():
-    #     _determine_action(agent, maze)
-    # PART 3: If you perceived an event that needs to be responded to (saw
-    # another agent), and retrieved relevant information.
-    # Step 1: Retrieved may have multiple events represented in it. The first
-    #         job here is to determine which of the events we want to focus
-    #         on for the agent.
-    #         <focused_event> takes the form of a dictionary like this:
-    #         dictionary {["curr_event"] = <ConceptNode>,
-    #                     ["events"] = [<ConceptNode>, ...],
-    #                     ["thoughts"] = [<ConceptNode>, ...]}
-    # Step 2: Once we choose an event, we need to determine whether the
-    #         agent will take any actions for the perceived event. There are
-    #         three possible modes of reaction returned by _should_react.
-    #         a) "chat with {target_agent.name}"
-    #         b) "react"
-    #         c) "do not react"
+    if agent.is_chatting():
+        return _process_chat_action(agent, simulation, maze)
+    # if the perceived agent is not chatting
+    elif event_agent_is_available_to_chat(event):
+        return _decide_to_chat(agent, simulation, event.agent, maze)
+    else:
+        return _generate_random_action(agent, simulation, maze)
+
+    #     return _process_event(agent, event, simulation, maze)
+    # else:
+    #     return _generate_random_action(agent, maze)
+
+
+def event_agent_is_available_to_chat(event):
+    return event and event.agent and not event.agent.is_chatting()
+
+
+def _process_finished_move_actions(agent, simulation, maze):
     action_plan = agent.plan
+    if finished_chat_move_action(action_plan):
+        neighbor_tiles = maze.get_nearby_tiles(
+            agent.curr_tile(), 1, include_reference_tile=True
+        )
+        other_agent = action_plan.interact_with
 
-    if finished_move_action(action_plan):
+        if other_agent.is_chatting():
+            print(
+                f"  plan | {agent.name} gave up on chatting with {other_agent.name} because they are already chatting"
+            )
+            agent.plan = _generate_random_action(agent, simulation, maze)
+            agent.save()
+        elif other_agent.curr_tile() in neighbor_tiles:
+            print(f"  plan | {agent.name} started chatting with {other_agent.name}")
+            create_chat_event(agent, other_agent, simulation)
+            create_chat_event(other_agent, agent, simulation)
+        else:
+            print(
+                f"  plan | {agent.name} gave up on chatting with {other_agent.name} because they are not here"
+            )
+            agent.plan = _generate_chat_plan(agent, simulation, other_agent, maze)
+            agent.save()
+        action_plan.delete()
+        # TODO make another gpt decision given that it came from a chat plan
+
+    elif finished_move_action(action_plan):
         action_plan.delete()
 
-    if action_plan and action_plan.planned_path:
-        return action_plan
+    elif finished_wait_action(action_plan, simulation):
+        action_plan.delete()
 
-    print(f"========= CAHT", agent.chatting_with)
-    print(f"=========== sel", selected)
-    if selected and not agent.chatting_with:
-        reaction_mode, other_agent = decide_reaction(agent, selected, simulation)
-        if reaction_mode != ReactionType.DO_NOT_REACT:
-            # If we do want to chat, then we generate conversation
-            if reaction_mode == ReactionType.CHAT_WITH:
-                # _chat_react(maze, agent, selected, reaction_mode, simulation)
 
-                print(f" plan | existing plan: {action_plan}")
+def _decide_to_chat(agent, simulation, other_agent, maze):
+    decision = get_weighted_random_choice(
+        [ReactionType.START_CHAT, ReactionType.DO_NOT_REACT], [0.7, 0.3]
+    )
+    if decision == ReactionType.START_CHAT:
+        return _generate_chat_plan(agent, simulation, other_agent, maze)
+    # TODO chat gpt decision here
+    else:
+        return _generate_random_action(agent, simulation, maze)
 
-                chat_message = "Hi"
-                target_tile = other_agent.curr_tile()
 
-                print(
-                    f"  plan | agents involved | agent: {agent.name} other_agent: {other_agent.name}"
-                )
+def create_chat_event(agent, chat_with, simulation, end=False):
+    from apps.simulations.event_models import Event
+    from apps.simulations.utils import EventType
 
-                path = get_shortest_path(agent, maze, [target_tile])
-                address = maze.get_address_from_tile(target_tile, "arena")
-                print(f"  plan | path: {path}")
-                description = f"Chatting with {other_agent.name}"
-                pronunciatio = "💬💬💬1F4AC"
+    Event.objects.create(
+        type=EventType.END_CHAT if end else EventType.CHAT,
+        agent=agent,
+        interact_with=chat_with,
+        simulation=simulation,
+        description=f"Chatting with {chat_with.name}",
+        sim_time_created=simulation.current_time(),
+        position_x=agent.curr_position_x,
+        position_y=agent.curr_position_y,
+    )
 
-                agent.chatting_with = other_agent
-                action_plan = ActionPlan.objects.create(
-                    type=ActionPlanType.MOVE,
-                    address=address,
-                    description=description,
-                    pronunciatio=pronunciatio,
-                    chat=chat_message,
-                    planned_path=path,
-                )
-                agent.plan = action_plan
-                # other_agent.save()
-                agent.save()
-                return action_plan
-            elif reaction_mode == ReactionType.WAIT:
-                _wait_react(agent, reaction_mode)
-            # elif reaction_mode == "do other things":
-            #   _chat_react(agent, focused_event, reaction_mode, agents)
 
-        # if address in maze.address_tiles:
-        #     target_tiles = maze.address_tiles[plan]
-        # else:
-        #     maze.address_tiles[
-        #         "Johnson Park:park:park garden"
-        #     ]  # ERROR fallback
-        # target_tiles = sample_tiles(target_tiles)
+def _process_chat_action(agent, simulation, maze):
+    other_agent = agent.last_event.interacting_with
 
-    # TODO remember to clean up
-    # Step 3: Chat-related state clean up.
-    # If the agent is not chatting with anyone, we clean up any of the
-    # chat-related states here.
-    # if agent.scratch.act_event[1] != "chat with":
-    #     agent.scratch.chatting_with = None
-    #     agent.scratch.chat = None
-    #     agent.scratch.chatting_end_time = None
-    # We want to make sure that the agent does not keep conversing with each
-    # other in an infinite loop. So, chatting_with_buffer maintains a form of
-    # buffer that makes the agent wait from talking to the same target
-    # immediately after chatting once. We keep track of the buffer value here.
-    # curr_agent_chat_buffer = agent.scratch.chatting_with_buffer
-    # for agent_name, buffer_count in curr_agent_chat_buffer.items():
-    #     if agent_name != agent.scratch.chatting_with:
-    #         agent.scratch.chatting_with_buffer[agent_name] -= 1
+    reaction_mode = decide_chat_reaction(agent, other_agent)
 
-    address = random.choice(public_arena_addresses)
-    # print(f"======= plan | random address: {address}")
-    target_tiles = list(maze.address_tiles[address])
-    print(f" plan | random {agent.curr_tile()}")
+    if reaction_mode == ReactionType.CONTINUE_CHAT:
+        print(f"  plan | {agent.name} will continue chatting with {other_agent.name}")
+        return _generate_chat_plan(agent, simulation, other_agent, maze)
+    elif reaction_mode == ReactionType.WAIT_RESPONSE:
+        print(f"  plan | {agent.name} is waiting for {other_agent.name} response")
+        # Don't do anything, don't move
+        return _generate_wait_response_plan(agent, simulation)
+    elif reaction_mode == ReactionType.END_CHAT:
+        # TODO get end chat message
+        print(f"  plan | {agent.name} ended chat with {other_agent.name}")
+        create_chat_event(agent, other_agent, simulation, end=True)
+        create_chat_event(other_agent, agent, simulation, end=True)
+        return _generate_random_action(agent, simulation, maze)
+
+    # TODO
+    # elif reaction_mode == ReactionType.WAIT:
+    #     _wait_react(agent, reaction_mode)
+
+
+def _generate_wait_response_plan(agent, simulation):
+    from apps.agents.models import ActionPlan
+
+    description = "Waiting chat response"
+    pronunciatio = "1F5E8"
+
+    action_plan = ActionPlan.objects.create(
+        type=ActionPlanType.IDLE,
+        simulation=simulation,
+        start_time=simulation.current_time(),
+        duration=random.randint(1, 10) * SECONDS_PER_STEP,
+        description=description,
+        pronunciatio=pronunciatio,
+    )
+    agent.plan = action_plan
+    agent.save()
+    return action_plan
+
+
+def _generate_idle_plan(agent, simulation):
+    from apps.agents.models import ActionPlan
+
+    description = "Idle"
+    pronunciatio = "231B"
+
+    action_plan = ActionPlan.objects.create(
+        type=ActionPlanType.IDLE,
+        simulation=simulation,
+        start_time=simulation.current_time(),
+        duration=random.randint(1, 10) * SECONDS_PER_STEP,
+        description=description,
+        pronunciatio=pronunciatio,
+    )
+    agent.plan = action_plan
+    agent.save()
+    return action_plan
+
+
+def _generate_chat_plan(agent, simulation, other_agent, maze):
+    from apps.agents.models import ActionPlan
+
+    chat_message = "Hi"
+    target_tiles = maze.get_nearby_tiles(
+        agent.curr_tile(), 1, include_reference_tile=False
+    )
+
+    if agent.plan:
+        return agent.plan
+
     path = get_shortest_path(agent, maze, target_tiles)
 
-    plan = ActionPlan.objects.create(
-        type=ActionPlanType.MOVE,
+    address = maze.get_address_from_tile(other_agent.curr_tile(), "arena")
+    description = f"Chat with {other_agent.name}"
+    pronunciatio = "1F4AC"
+
+    action_plan = ActionPlan.objects.create(
+        type=ActionPlanType.CHAT_WITH,
+        simulation=simulation,
+        start_time=simulation.current_time(),
         address=address,
-        description="Random",
-        pronunciatio="1F6B6",
+        description=description,
+        pronunciatio=pronunciatio,
+        chat=chat_message,
         planned_path=path,
+        interact_with=other_agent,
     )
+    agent.plan = action_plan
+    agent.save()
+    return action_plan
+
+
+def _generate_random_action(agent, simulation, maze):
+    from apps.agents.models import ActionPlan
+
+    reaction_type = get_weighted_random_choice(
+        [ActionPlanType.IDLE, ActionPlanType.MOVE], [0.8, 0.2]
+    )
+    # reaction_type = ActionPlanType.MOVE
+
+    if reaction_type == ActionPlanType.MOVE:
+        address = random.choice(meeting_addresses)
+        target_tiles = list(maze.address_tiles[address])
+        path = get_shortest_path(agent, maze, target_tiles)
+
+        plan = ActionPlan.objects.create(
+            type=ActionPlanType.MOVE,
+            start_time=simulation.current_time(),
+            simulation=simulation,
+            address=address,
+            description="Random move",
+            pronunciatio="1F6B6",
+            planned_path=path,
+        )
+    else:
+        plan = _generate_idle_plan(agent, simulation)
+
     agent.plan = plan
     agent.save()
+
     return plan
 
 
-def decide_reaction(agent, event, simulation):
-    # TODO implement
-    # reaction = get_weighted_random_choice(
-    #     [ReactionType.REACT, ReactionType.WAIT, ReactionType.DO_NOT_REACT, ReactionType.CHAT_WITH],
-    #     [0, 0, 0.1, 0.9],
-    # )
-
-    return ReactionType.CHAT_WITH, event.agent
+def decide_chat_reaction(agent, other_agent):
+    # Agent is waiting for answer if last chat event is from him
+    if agent.last_event().sim_time_created > other_agent.last_event().sim_time_created:
+        return ReactionType.WAIT_RESPONSE
+    # Agent is replying if last chat event was from the other user
+    elif (
+        agent.last_event().sim_time_created < other_agent.last_event().sim_time_created
+    ):
+        return get_weighted_random_choice(
+            [ReactionType.CONTINUE_CHAT, ReactionType.END_CHAT],
+            [0.7, 0.3],
+        )
+    else:
+        raise Exception
 
 
 def get_random_bool(true_percentage):
@@ -175,4 +256,23 @@ def finished_move_action(action_plan):
         action_plan
         and action_plan.type == ActionPlanType.MOVE
         and not action_plan.planned_path
+    )
+
+
+def finished_chat_move_action(action_plan):
+    return (
+        action_plan
+        and action_plan.type == ActionPlanType.CHAT_WITH
+        and not action_plan.planned_path
+    )
+
+
+def finished_wait_action(action_plan, simulation):
+    from datetime import timedelta
+
+    return (
+        action_plan
+        and action_plan.type == ActionPlanType.IDLE
+        and action_plan.start_time + timedelta(seconds=action_plan.duration)
+        == simulation.current_time().astimezone(timezone.utc)
     )

@@ -1,8 +1,10 @@
 import unittest
+from datetime import timedelta
 
 import pytest
 
 import tests.factories as f
+from apps.agents.constants import INITIAL_DATE
 from apps.simulations.utils import (  # Replace 'your_module' with the actual module containing the function
     format_simulation_response,
     get_maze_meta,
@@ -26,3 +28,9 @@ class TestGetSimulationMeta(unittest.TestCase):
         assert step in formatted_data
         assert agent.name in formatted_data[step]
         assert formatted_data[step][agent.name]["movement"] == path[0]
+
+    def test_current_time(self):
+        simulation = f.SimulationFactory(step=1)
+        assert simulation.current_time() == INITIAL_DATE + timedelta(seconds=10)
+        simulation = f.SimulationFactory(step=2)
+        assert simulation.current_time() == INITIAL_DATE + timedelta(seconds=20)

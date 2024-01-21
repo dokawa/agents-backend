@@ -292,7 +292,7 @@ class Maze:
 
         return path
 
-    def get_nearby_tiles(self, tile, vision_r):
+    def get_nearby_tiles(self, tile, vision_r, include_reference_tile=True):
         """
         Given the current tile and vision_r, return a list of tiles that are
         within the radius. Note that this implementation looks at a square
@@ -326,10 +326,13 @@ class Maze:
         if tile[1] - vision_r > top_end:
             top_end = tile[1] - vision_r
 
-        nearby_tiles = []
+        nearby_tiles = set()
         for i in range(left_end, right_end):
             for j in range(top_end, bottom_end):
-                nearby_tiles += [(i, j)]
+                if not include_reference_tile and (tile == (i, j)):
+                    continue
+
+                nearby_tiles.add((i, j))
         return nearby_tiles
 
     def add_event_from_tile(self, curr_event, tile):

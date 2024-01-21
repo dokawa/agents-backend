@@ -28,16 +28,17 @@ class SimulationViewSet(viewsets.GenericViewSet):
 
         paths = defaultdict(dict)
         for agent in agents:
-            print(f"simulationViewset | agent: {agent.name}")
             next_tile = agent.execute_step(simulation, maze)
             if next_tile:
                 paths[agent.name] = next_tile
                 # Event.objects.create(type=EventType.MOVEMENT, agent=agent, simulation=simulation, position_x=next_tile[0], position_y=next_tile[1])
 
-            print(f"  simulationViewset | agent: {agent.name} next_tile: {next_tile}")
+            # print(
+            #     f"simulationViewset | agent: {agent.name} is_chatting: {agent.is_chatting()} next_tile: {next_tile}"
+            # )
 
         # serializer = AgentSerializer(agents, many=True)
-        response = format_response(simulation.step, agents, paths)
+        response = format_response(agents, simulation, paths)
         simulation.advance_step()
         return Response(response)
 
@@ -49,7 +50,7 @@ class SimulationViewSet(viewsets.GenericViewSet):
 
     def get_or_create_last_event(self, agent, simulation, maze):
         # If a user does not have an event, we create a movement one
-        last_event = agent.get_last_event()
+        last_event = agent.last_event()
         if last_event:
             return last_event
 
@@ -75,6 +76,14 @@ class SimulationViewSet(viewsets.GenericViewSet):
     def reset_count(self, request, pk=None, *args, **kwargs):
         simulation = self.get_object()
         simulation.reset_count()
+        return Response({})
+
+    @action(detail=True, methods=["GET"])
+    def reset(self, request, pk=None, *args, **kwargs):
+        simulation = self.get_object()
+        simulation.events.all().delete()
+        simulation.action_plans.all().delete()
+
         return Response({})
 
 

@@ -10,7 +10,7 @@ from apps.simulations.utils import EventType
 
 class Event(TimeStampedModel):
     agent = models.ForeignKey(Agent, related_name="events", on_delete=models.CASCADE)
-    interacting_with = models.ForeignKey(
+    interact_with = models.ForeignKey(
         Agent, null=True, blank=True, on_delete=models.CASCADE
     )
 

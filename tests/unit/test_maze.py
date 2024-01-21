@@ -16,10 +16,20 @@ class TestMaze(unittest.TestCase):
         # self.assertEqual(maze.address_tiles, "the Ville:Giorgio Rossi's apartment")
 
         address = maze.address_tiles["the Ville:Giorgio Rossi's apartment:main room"]
-        self.assertTrue((86, 17) in address)
-        self.assertTrue((86, 18) in address)
-        self.assertTrue((87, 17) in address)
-        self.assertTrue((87, 18) in address)
+        assert (86, 17) in address
+        assert (86, 18) in address
+        assert (87, 17) in address
+        assert (87, 18) in address
+
+    def test_include_nearby_tiles(self):
+        maze = Maze("the_ville")
+
+        tile = (68, 58)
+        near = maze.get_nearby_tiles(tile, 1, False)
+        assert near
+        assert tile not in near
+        near = maze.get_nearby_tiles(tile, 1)
+        assert tile in near
 
     def test_target_tiles(self):
         maze = Maze("the_ville")

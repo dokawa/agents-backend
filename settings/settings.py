@@ -89,7 +89,10 @@ DATABASES = {
         "PASSWORD": "1234",
         "HOST": "localhost",
         "PORT": "5432",  # Default PostgreSQL port
-    }
+    },
+    "OPTIONS": {
+        "charset": "utf8mb4",
+    },
 }
 
 

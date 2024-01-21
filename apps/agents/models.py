@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 from django.db.models import JSONField
 from model_utils.models import TimeStampedModel
@@ -7,7 +9,9 @@ from apps.agents.agent.execute import execute
 from apps.agents.agent.perceive import perceive
 from apps.agents.agent.plan import plan
 from apps.agents.agent.select import select
+from apps.agents.constants import CHAT_COOLDOWN_IN_MINUTES
 from apps.simulations.models import Simulation
+from apps.simulations.utils import EventType
 
 
 class Agent(TimeStampedModel):
@@ -28,9 +32,6 @@ class Agent(TimeStampedModel):
     curr_position_x = models.PositiveIntegerField(null=True, blank=True, default=0)
     curr_position_y = models.PositiveIntegerField(null=True, blank=True, default=0)
 
-    chatting_with = models.OneToOneField(
-        "self", null=True, blank=True, on_delete=models.SET_NULL
-    )
     plan = models.OneToOneField(
         "ActionPlan",
         null=True,
@@ -40,10 +41,10 @@ class Agent(TimeStampedModel):
     )
 
     # This makes chatting_with relationship bidirectional
-    def save(self, *args, **kwargs):
-        super(Agent, self).save(*args, **kwargs)
-        if self.chatting_with:
-            self.chatting_with.chatting_with = self
+    # def save(self, *args, **kwargs):
+    #     super(Agent, self).save(*args, **kwargs)
+    #     if self.chatting_with:
+    #         self.chatting_with.chatting_with = self
 
     def execute_step(self, simulation, maze):
         # """
@@ -68,7 +69,7 @@ class Agent(TimeStampedModel):
         # # Main cognitive sequence begins here.
         agents = simulation.agents.all()
         perceived = perceive(self, maze)
-        selected = select(self, perceived)
+        selected = select(self, perceived, simulation.current_time())
         # retrieved = retrieve(self, simulation, selected)
         planned = plan(self, simulation, maze, None, selected)
 
@@ -95,25 +96,53 @@ class Agent(TimeStampedModel):
     def curr_tile(self):
         return (self.curr_position_x, self.curr_position_y)
 
-    def get_last_event(self):
-        last_event = self.events.all().order_by("created").last()
+    def is_chatting(self):
+        return self.last_event() and self.last_event().type == EventType.CHAT
+
+    def get_interacting_with(self):
+        last_event = self.last_event()
+        if last_event:
+            return last_event.interact_with
+
+    def last_event(self):
+        last_event = self.events.all().order_by("sim_time_created").last()
         return last_event
+
+    def chatted_recently(self, other_agent, curr_time):
+        last_event = self.last_event()
+        if (
+            last_event
+            and last_event.interact_with == other_agent
+            and last_event.sim_time_created - curr_time
+            < timedelta(minutes=CHAT_COOLDOWN_IN_MINUTES)
+        ):
+            return True
+
+        return False
 
 
 class ActionPlan(models.Model):
     type = models.CharField(
         max_length=32, choices=ActionPlanType.choices, null=True, blank=True
     )
+    simulation = models.ForeignKey(
+        Simulation,
+        related_name="action_plans",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     address = models.CharField(max_length=255, null=True, blank=True)
     start_time = models.DateTimeField(null=True, blank=True)
-    duration = models.PositiveIntegerField(null=True, blank=True)
+    duration = models.PositiveIntegerField(null=True, blank=True)  # duration in seconds
     description = models.TextField(null=True, blank=True)
     pronunciatio = models.TextField(null=True, blank=True)
 
     chat = models.TextField(null=True, blank=True)
-    chatting_with_buffer = models.JSONField(null=True, blank=True, default=dict)
-    chatting_end_time = models.DateTimeField(null=True, blank=True)
 
+    interact_with = models.ForeignKey(
+        Agent, null=True, blank=True, on_delete=models.CASCADE
+    )
     planned_path = JSONField(null=True, blank=True, default=list)
 
     def advance_in_path(self):

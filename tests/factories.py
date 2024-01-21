@@ -1,7 +1,7 @@
 import factory.fuzzy
 from factory.django import DjangoModelFactory
 
-from apps.agents.models import Agent
+from apps.agents.models import ActionPlan, Agent
 from apps.simulations.event_models import Event
 from apps.simulations.models import Simulation
 
@@ -36,3 +36,8 @@ class EventFactory(DjangoModelFactory):
     agent = factory.SubFactory("tests.factories.AgentFactory")
     poignancy = factory.fuzzy.FuzzyInteger(1, 10)
     simulation = factory.SubFactory("tests.factories.SimulationFactory")
+
+
+class ActionPlanFactory(DjangoModelFactory):
+    class Meta:
+        model = ActionPlan

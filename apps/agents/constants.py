@@ -26,7 +26,14 @@ GLOBAL_IMPORTANCE_WEIGHT = 2
 
 
 # Date
-from datetime import date
+from datetime import datetime
 
-INITIAL_DATE = date(2024, 1, 1)
+from django.utils import timezone
+
+CHAT_COOLDOWN_IN_MINUTES = 10
+INITIAL_DATE = timezone.make_aware(
+    datetime(2024, 1, 1), timezone.get_default_timezone()
+)
+
+
 SECONDS_PER_STEP = 10

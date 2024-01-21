@@ -68,16 +68,28 @@ def format_simulation_response(starting_step, agents, paths):
     return response
 
 
-def format_response(step, agents, paths):
+def format_response(agents, simulation, paths):
     from collections import defaultdict
 
     response = defaultdict(dict)
+    step = simulation.step
 
     for agent in agents:
         response[step][agent.name] = {"pronunciatio": agent.plan.pronunciatio}
-        if paths[agent.name]:
-            response[step][agent.name].update({"movement": paths[agent.name]})
+        # if paths[agent.name]:
+        #     response[step][agent.name].update({"movement": paths[agent.name]})
+        next_tile = paths[agent.name] if paths[agent.name] else agent.curr_tile()
+        response[step][agent.name].update({"movement": next_tile})
+        response[step][agent.name].update(
+            {
+                "plan": {
+                    "description": agent.plan.description,
+                    "duration": agent.plan.duration,
+                }
+            }
+        )
 
+    response["meta"] = simulation.current_time()
     return response
 
 
