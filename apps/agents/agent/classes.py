@@ -12,4 +12,4 @@ class ReactionType(models.TextChoices):
 class ActionPlanType(models.TextChoices):
     IDLE = "wait", "Wait"
     MOVE = "move", "Move"
-    CHAT_WITH = "chat_with", "Chat with"
+    CHAT_MOVE = "chat_move", "Chat move"

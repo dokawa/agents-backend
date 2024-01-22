@@ -157,3 +157,12 @@ class TestAStar(unittest.TestCase):
         elapsed_time = end_time - start_time
 
         assert elapsed_time < 0.2
+
+    def test_has_path(self):
+        maze = Maze("the_ville")
+
+        start = (75, 44)
+        end = (82, 49)
+
+        path = get_path(maze.collision_maze, start, end, COLLISION_BLOCK_ID)
+        assert path

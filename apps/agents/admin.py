@@ -14,7 +14,15 @@ class AgentInline(admin.TabularInline):
 
 class ActionPlanAdmin(admin.ModelAdmin):
     model = ActionPlan
-    list_display = ("id", "agent", "description", "start_time", "time")
+    list_display = (
+        "id",
+        "type",
+        "agent",
+        "interact_with",
+        "description",
+        "start_time",
+        "time",
+    )
     list_filter = ("type",)
     inlines = [
         AgentInline,

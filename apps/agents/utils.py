@@ -357,20 +357,12 @@ public_arena_addresses = [
     "the Ville:The Willows Market and Pharmacy:store:pharmacy store counter",
 ]
 
-meeting_addresses = [
+store_addresses = [
     "the Ville:Harvey Oak Supply Store",
     "the Ville:Harvey Oak Supply Store:supply store",
-    "the Ville:The Willows Market and Pharmacy",
-    "the Ville:The Willows Market and Pharmacy:store",
     "the Ville:Harvey Oak Supply Store:supply store:supply store product shelf",
     "the Ville:Harvey Oak Supply Store:supply store:behind the supply store counter",
-    "the Ville:The Willows Market and Pharmacy:store:behind the grocery counter",
-    "the Ville:The Willows Market and Pharmacy:store:pharmacy store shelf",
     "the Ville:Harvey Oak Supply Store:supply store:supply store counter",
-    "the Ville:The Willows Market and Pharmacy:store:grocery store counter",
-    "the Ville:The Willows Market and Pharmacy:store:grocery store shelf",
-    "the Ville:The Willows Market and Pharmacy:store:behind the pharmacy counter",
-    "the Ville:The Willows Market and Pharmacy:store:pharmacy store counter",
 ]
 
 college_addresses = [

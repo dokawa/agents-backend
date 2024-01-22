@@ -16,14 +16,18 @@ class EventAdmin(admin.ModelAdmin):
     model = Event
     list_display = [
         "id",
+        "type",
         "agent",
         "interact_with",
         "simulation",
-        "type",
+        "sim_time",
         "position_x",
         "position_y",
     ]
     list_filter = ["agent__name", "type"]
+
+    def sim_time(self, obj):
+        return obj.sim_time_created.strftime("%Y-%m-%d %H:%M:%S")
 
 
 admin.site.register(Simulation, SimulationAdmin)

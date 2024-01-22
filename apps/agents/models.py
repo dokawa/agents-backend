@@ -7,7 +7,7 @@ from model_utils.models import TimeStampedModel
 from apps.agents.agent.classes import ActionPlanType
 from apps.agents.agent.execute import execute
 from apps.agents.agent.perceive import perceive
-from apps.agents.agent.plan import plan
+from apps.agents.agent.plan.plan import plan
 from apps.agents.agent.select import select
 from apps.agents.constants import CHAT_COOLDOWN_IN_MINUTES
 from apps.simulations.models import Simulation
@@ -97,15 +97,49 @@ class Agent(TimeStampedModel):
         return (self.curr_position_x, self.curr_position_y)
 
     def is_chatting(self):
-        return self.last_event() and self.last_event().type == EventType.CHAT
+        last_event = self.last_event()
+        is_chatting = last_event and last_event.type == EventType.CHAT
+        chat_ended = last_event and last_event.type == EventType.CHAT_END
+        return (is_chatting or self.is_chat_starter()) and not chat_ended
+
+    def has_last_chat(self, other_agent):
+        agent_last_chat = self.last_chat_event()
+        other_last_chat = other_agent.last_chat_event()
+
+        if agent_last_chat and other_last_chat:
+            return (
+                self.last_chat_event().created > other_agent.last_chat_event().created
+            )
+
+        if not agent_last_chat:
+            return False
+
+        return True
+
+    def is_chat_starter(self):
+        return self.last_event() and self.last_event().type == EventType.CHAT_START
+
+    def was_invited_to_chat(self):
+        last_interact = self.get_last_interacted_with()
+        if last_interact and last_interact.type == EventType.CHAT_START:
+            return not self.is_chatting()
+
+        return False
 
     def get_interacting_with(self):
-        last_event = self.last_event()
+        last_event = self.get_last_interacted_with()
         if last_event:
             return last_event.interact_with
 
+    def get_last_interacted_with(self):
+        return self.interact_with.order_by("created").last()
+
     def last_event(self):
-        last_event = self.events.all().order_by("sim_time_created").last()
+        last_event = self.events.all().order_by("created").last()
+        return last_event
+
+    def last_chat_event(self):
+        last_event = self.events.filter(type=EventType.CHAT).order_by("created").last()
         return last_event
 
     def chatted_recently(self, other_agent, curr_time):
@@ -151,7 +185,12 @@ class ActionPlan(models.Model):
             self.save()
 
     def __str__(self):
-        return f"{self.description}"
+        return f"{self.type} | {self.description}"
 
     def __repr__(self):
         return self.__str__()
+
+    def expires(self, curr_time):
+        if not self.duration:
+            return False
+        return self.start_time + timedelta(seconds=self.duration) == curr_time

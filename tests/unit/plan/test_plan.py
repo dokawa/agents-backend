@@ -4,7 +4,8 @@ import pytest
 
 import tests.factories as f
 from apps.agents.agent.classes import ActionPlanType
-from apps.agents.agent.plan import finished_wait_action, plan
+from apps.agents.agent.plan.plan import plan
+from apps.agents.agent.plan.process_finished_actions import finished_idle_action
 from apps.simulations.maze import Maze
 
 pytestmark = pytest.mark.django_db
@@ -35,7 +36,7 @@ class TestPlan(unittest.TestCase):
 
         simulation.advance_step()
         assert simulation.step == 2
-        assert finished_wait_action(action_plan, simulation)
+        assert finished_idle_action(action_plan, simulation)
 
     # def test_chatting_with(self):
     #     maze = Maze("the_ville")
@@ -56,7 +57,4 @@ class TestPlan(unittest.TestCase):
     #
     #     plan(chatting_1, simulation, maze, None, event)
     #
-    #     assert chatting_1.chatting_with == chatting_2
-    #     assert chatting_2.chatting_with == chatting_1
     #
-    #     plan(other_agent, simulation, maze, None, event)

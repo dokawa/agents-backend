@@ -11,7 +11,7 @@ class Simulation(TimeStampedModel):
     step = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f"{ self.id } | {self.name}"
+        return f"{self.name} | {self.current_time()}"
 
     def current_time(self):
         return INITIAL_DATE + timedelta(seconds=self.step * SECONDS_PER_STEP)

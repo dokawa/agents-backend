@@ -102,4 +102,5 @@ class EventType(models.TextChoices):
     THOUGHT = "thought", "Thought"
     OCCURENCE = "occurence", "Occurence"
     CHAT = "chat", "Chat"
-    ACTION = "action", "Action"  # TODO check if needed
+    CHAT_START = "chat_start", "Chat start"
+    CHAT_END = "chat_end", "Chat end"

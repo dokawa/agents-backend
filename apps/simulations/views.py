@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.agents.constants import INITIAL_DATE
 from apps.agents.serializers import AgentSerializer
 from apps.simulations.event_models import Event
 from apps.simulations.maze import Maze
@@ -31,6 +32,10 @@ class SimulationViewSet(viewsets.GenericViewSet):
             next_tile = agent.execute_step(simulation, maze)
             if next_tile:
                 paths[agent.name] = next_tile
+
+                # TODO get position from last move event
+                agent.curr_position_x, agent.curr_position_y = next_tile
+                agent.save()
                 # Event.objects.create(type=EventType.MOVEMENT, agent=agent, simulation=simulation, position_x=next_tile[0], position_y=next_tile[1])
 
             # print(
@@ -57,6 +62,7 @@ class SimulationViewSet(viewsets.GenericViewSet):
         x, y = agent.curr_tile()
         event = Event.objects.create(
             agent=agent,
+            sim_time_created=INITIAL_DATE,
             address=maze.get_address_from_tile((x, y), "arena"),
             type=EventType.MOVEMENT,
             simulation=simulation,
@@ -84,7 +90,7 @@ class SimulationViewSet(viewsets.GenericViewSet):
         simulation.events.all().delete()
         simulation.action_plans.all().delete()
 
-        return Response({})
+        return Response({"response": "Simulation reset"})
 
 
 class EventViewSet(viewsets.ModelViewSet):

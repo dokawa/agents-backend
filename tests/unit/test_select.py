@@ -4,6 +4,7 @@ import pytest
 
 import tests.factories as f
 from apps.agents.agent.select import select
+from apps.simulations.utils import EventType
 
 pytestmark = pytest.mark.django_db
 
@@ -52,9 +53,6 @@ class TestSelect(unittest.TestCase):
             simulation=simulation, curr_position_x=68, curr_position_y=59
         )
 
-        other_agent = f.AgentFactory(
-            simulation=simulation, curr_position_x=68, curr_position_y=59
-        )
         event_agent = f.AgentFactory(
             simulation=simulation,
             curr_position_x=68,
@@ -62,9 +60,10 @@ class TestSelect(unittest.TestCase):
         )
 
         event = f.EventFactory(
-            agent=event_agent,
+            agent=agent,
+            type=EventType.CHAT_START,
             simulation=simulation,
-            interact_with=other_agent,
+            interact_with=event_agent,
         )
 
         chosen = select(agent, [event], simulation.current_time())
